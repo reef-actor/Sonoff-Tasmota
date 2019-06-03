@@ -249,6 +249,14 @@ void MqttPublishPowerState(uint8_t device)
   }
 }
 
+void MqttPublishAllPowerState()
+{
+  for (uint8_t i = 1; i <= devices_present; i++) {
+    MqttPublishPowerState(i);
+    if (SONOFF_IFAN02 == my_module_type) { break; }  // Report status of light relay only
+  }
+}
+
 void MqttPublishPowerBlinkState(uint8_t device)
 {
   char scommand[33];
@@ -321,10 +329,7 @@ void MqttConnected(void)
 #endif  // USE_WEBSERVER
     Response_P(PSTR("{\"" D_JSON_RESTARTREASON "\":\"%s\"}"), (GetResetReason() == "Exception") ? ESP.getResetInfo().c_str() : GetResetReason().c_str());
     MqttPublishPrefixTopic_P(TELE, PSTR(D_RSLT_INFO "3"));
-    for (uint8_t i = 1; i <= devices_present; i++) {
-      MqttPublishPowerState(i);
-      if (SONOFF_IFAN02 == my_module_type) { break; }  // Report status of light relay only
-    }
+    MqttPublishAllPowerState();
     if (Settings.tele_period) { tele_period = Settings.tele_period -9; }  // Enable TelePeriod in 9 seconds
     rules_flag.system_boot = 1;
     XdrvCall(FUNC_MQTT_INIT);
@@ -418,7 +423,7 @@ void MqttReconnect(void)
     return;
   }
 
-#if defined(USE_WEBSERVER) && defined(USE_EMULATION)
+#ifdef USE_EMULATION
   UdpDisconnect();
 #endif  // USE_EMULATION
 
@@ -741,14 +746,14 @@ const char HTTP_BTN_MENU_MQTT[] PROGMEM =
 const char HTTP_FORM_MQTT1[] PROGMEM =
   "<fieldset><legend><b>&nbsp;" D_MQTT_PARAMETERS "&nbsp;</b></legend>"
   "<form method='get' action='" WEB_HANDLE_MQTT "'>"
-  "<p><b>" D_HOST "</b> (" MQTT_HOST ")<br/><input id='mh' name='mh' placeholder='" MQTT_HOST" ' value='%s'></p>"
-  "<p><b>" D_PORT "</b> (" STR(MQTT_PORT) ")<br/><input id='ml' name='ml' placeholder='" STR(MQTT_PORT) "' value='%d'></p>"
-  "<p><b>" D_CLIENT "</b> (%s)<br/><input id='mc' name='mc' placeholder='%s' value='%s'></p>";
+  "<p><b>" D_HOST "</b> (" MQTT_HOST ")<br><input id='mh' placeholder='" MQTT_HOST" ' value='%s'></p>"
+  "<p><b>" D_PORT "</b> (" STR(MQTT_PORT) ")<br><input id='ml' placeholder='" STR(MQTT_PORT) "' value='%d'></p>"
+  "<p><b>" D_CLIENT "</b> (%s)<br><input id='mc' placeholder='%s' value='%s'></p>";
 const char HTTP_FORM_MQTT2[] PROGMEM =
-  "<p><b>" D_USER "</b> (" MQTT_USER ")<br/><input id='mu' name='mu' placeholder='" MQTT_USER "' value='%s'></p>"
-  "<p><b>" D_PASSWORD "</b><br/><input id='mp' name='mp' type='password' placeholder='" D_PASSWORD "' value='" D_ASTERISK_PWD "'></p>"
-  "<p><b>" D_TOPIC "</b> = %%topic%% (%s)<br/><input id='mt' name='mt' placeholder='%s' value='%s'></p>"
-  "<p><b>" D_FULL_TOPIC "</b> (%s)<br/><input id='mf' name='mf' placeholder='%s' value='%s'></p>";
+  "<p><b>" D_USER "</b> (" MQTT_USER ")<br><input id='mu' placeholder='" MQTT_USER "' value='%s'></p>"
+  "<p><b>" D_PASSWORD "</b><br><input id='mp' type='password' placeholder='" D_PASSWORD "' value='" D_ASTERISK_PWD "'></p>"
+  "<p><b>" D_TOPIC "</b> = %%topic%% (%s)<br><input id='mt' placeholder='%s' value='%s'></p>"
+  "<p><b>" D_FULL_TOPIC "</b> (%s)<br><input id='mf' placeholder='%s' value='%s'></p>";
 
 void HandleMqttConfiguration(void)
 {
